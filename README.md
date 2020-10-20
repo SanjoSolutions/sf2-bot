@@ -31,7 +31,7 @@ E.g.:
         * ...
     * ...
 
-# Screenshots
+### Screenshots
 
 Screenshots include screenshots of frames of the game
 for testing if the implementation works.
