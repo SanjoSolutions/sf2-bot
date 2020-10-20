@@ -139,6 +139,16 @@ def detect_sprite(sprites, side, image_to_find_in):
     return results
 
 
+def get_first_animation_frames(animations):
+    first_animation_frames = [
+        animation[0]
+        for animation
+        in animations.values()
+    ]
+    first_animation_frames.append(animations['knockdown_recover'][2])  # when thrown
+    return first_animation_frames
+
+
 class SpriteDetector:
     def __init__(self, animations):
         self.animations = animations
@@ -146,11 +156,7 @@ class SpriteDetector:
 
     def detect(self, frame, side):
         if len(self.last_possible_animations) == 0:
-            sprites = tuple(
-                sprites[0]
-                for sprites
-                in self.animations.values()
-            )
+            sprites = get_first_animation_frames(self.animations)
             results = detect_sprite(sprites, side, frame)
             self.last_possible_animations = []
             for sprite, location in results:
@@ -176,23 +182,7 @@ class SpriteDetector:
                     possible_last_sprite_of_an_animation = True
 
             if possible_last_sprite_of_an_animation:
-                last_possible_animation_names = set(
-                    animation['name']
-                    for animation
-                    in self.last_possible_animations
-                )
-                other_animation_names = tuple(
-                    animation_name
-                    for animation_name
-                    in self.animations.keys()
-                    if animation_name not in last_possible_animation_names
-                )
-                first_animation_frames = tuple(
-                    self.animations[animation_name][0]
-                    for animation_name
-                    in other_animation_names
-                )
-                sprites.extend(first_animation_frames)
+                sprites.extend(get_first_animation_frames(self.animations))
 
             results = detect_sprite(sprites, side, frame)
 
