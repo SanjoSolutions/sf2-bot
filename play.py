@@ -4,19 +4,25 @@ import numpy as np
 import time
 
 from main import get_animations_of_character, SpriteDetector, Side, ActionChooser1, \
-    ActionChooser1BestResponse
+    ActionChooser1BestResponse, KenHadokenProjectileSpriteDetector, get_animation_sprites
 
 BUTTON_COUNT = 12
 
 
 def main():
     animations = (
-        None, # get_animations_of_character('ryu'),
+        get_animations_of_character('ryu'),
         get_animations_of_character('ken')
     )
     sprite_detectors = (
-        None, # SpriteDetector(animations[0]),
+        SpriteDetector(animations[0]),
         SpriteDetector(animations[1]),
+    )
+    projectile_sprite_detectors = (
+        None,
+        KenHadokenProjectileSpriteDetector(
+            get_animation_sprites('sprites/projectiles/ken/hadoken_projectile')
+        )
     )
     action_choosers = (
         ActionChooser1(0),
@@ -40,25 +46,29 @@ def main():
             observations = cv.cvtColor(obs, cv.COLOR_RGB2GRAY)
             results = [None, None]
             # print('Ryu:')
-            # results[0] = sprite_detectors[0].detect(
-            #     observations,
-            #     Side.LEFT if info['x_p1'] <= info['x_p2'] else Side.RIGHT
-            # )
-            results[0] = None
+            results[0] = sprite_detectors[0].detect(
+                observations,
+                Side.LEFT if info['x_p1'] <= info['x_p2'] else Side.RIGHT
+            )
             # print('Ken:')
-            side = Side.LEFT if info['x_p2'] <= info['x_p1'] else Side.RIGHT
             results[1] = sprite_detectors[1].detect(
                 observations,
-                side
+                Side.LEFT if info['x_p2'] <= info['x_p1'] else Side.RIGHT
             )
-            print(results)
+            # print(results)
+
+            projectile_results = [None, None]
+            projectile_results[0] = None
+            projectile_results[1] = projectile_sprite_detectors[1].detect(observations)
+            print(projectile_results)
         else:
             results = None
+            projectile_results = None
         # action_space will by MultiBinary(16) now instead of MultiBinary(8)
         # the bottom half of the actions will be for player 1 and the top half for player 2
         actions = np.concatenate((
-            action_choosers[0].choose_action(info, results),
-            action_choosers[1].choose_action(info, results),
+            action_choosers[0].choose_action(info, results, projectile_results),
+            action_choosers[1].choose_action(info, results, projectile_results),
         ))
         obs, rew, done, info = env.step(actions)
         # rew will be a list of [player_1_rew, player_2_rew]

@@ -52,6 +52,15 @@ def list_dir(folder_path):
     )
 
 
+def list_folders(folder_path):
+    return tuple(
+        folder
+        for folder
+        in list_dir(folder_path)
+        if path.isdir(folder_path)
+    )
+
+
 def read_images(image_paths):
     return tuple(read_image(image_path) for image_path in image_paths)
 
@@ -61,58 +70,68 @@ def read_image(image_path):
 
 
 def get_animations_of_character(character_name):
+    return get_animations_in_folder(get_animation_folder_for_character(character_name))
+
+
+def get_animations_in_folder(folder_path):
     animations = {}
-    for animation_folder in get_animation_folders_for_character(character_name):
-        animation_name = path.basename(animation_folder)
-        animation_sprite_paths = get_ordered_numbered_file_paths(animation_folder)
-        animation_sprites = []
-
-        for sprite_path in animation_sprite_paths:
-            sprite_number = get_sprite_number_from_path(sprite_path)
-            image = cv.imread(sprite_path, flags=cv.IMREAD_UNCHANGED)
-            channels = cv.split(image)
-            alpha_channel = np.array(channels[3]) \
-                if len(channels) >= 4 \
-                else np.full_like(channels[0], 255)
-            mask = alpha_channel
-            image_gray = cv.cvtColor(image, cv.COLOR_BGRA2GRAY)
-
-            image_gray_mirrored = cv.flip(image_gray, 1)
-            mask_mirrored = cv.flip(mask, 1)
-
-            animation_sprites.append((
-                animation_name,
-                sprite_number,
-                sprite_path,
-                image_gray,
-                mask,
-                image_gray_mirrored,
-                mask_mirrored
-            ))
-
-        animations[animation_name] = animation_sprites
+    for animation_folder_path in get_animation_folder_paths(folder_path):
+        animation_name = get_animation_name_from_folder_path(animation_folder_path)
+        animations[animation_name] = get_animation_sprites(animation_folder_path)
 
     return animations
+
+
+def get_animation_name_from_folder_path(animation_folder_path):
+    return path.basename(animation_folder_path)
+
+
+def get_animation_sprites(animation_folder_path):
+    animation_name = get_animation_name_from_folder_path(animation_folder_path)
+    animation_sprite_paths = get_ordered_numbered_file_paths(animation_folder_path)
+    animation_sprites = []
+
+    for sprite_path in animation_sprite_paths:
+        sprite_number = get_sprite_number_from_path(sprite_path)
+        image = cv.imread(sprite_path, flags=cv.IMREAD_UNCHANGED)
+        channels = cv.split(image)
+        alpha_channel = np.array(channels[3]) \
+            if len(channels) >= 4 \
+            else np.full_like(channels[0], 255)
+        mask = alpha_channel
+        image_gray = cv.cvtColor(image, cv.COLOR_BGRA2GRAY)
+
+        image_gray_mirrored = cv.flip(image_gray, 1)
+        mask_mirrored = cv.flip(mask, 1)
+
+        animation_sprites.append((
+            animation_name,
+            sprite_number,
+            sprite_path,
+            image_gray,
+            mask,
+            image_gray_mirrored,
+            mask_mirrored
+        ))
+
+    return animation_sprites
 
 
 def get_sprite_number_from_path(sprite_path):
     return file_name_to_integer(path.basename(sprite_path))
 
 
-def get_animation_folders_for_character(character_name):
+def get_animation_folder_for_character(character_name):
     base_path = 'sprites'
-    character_sprites_path = path.join(base_path, character_name)
-    animation_folders = tuple(
-        folder_path
-        for folder_path
-        in tuple(
-            path.join(character_sprites_path, animation_name)
-            for animation_name
-            in os.listdir(character_sprites_path)
-        )
-        if path.isdir(folder_path)
-    )
-    return animation_folders
+    return path.join(base_path, character_name)
+
+
+def get_animation_folder_paths(animations_folder_path):
+    return get_subfolder_paths(animations_folder_path)
+
+
+def get_subfolder_paths(folder_path):
+    return file_names_to_absolute_paths(folder_path, list_folders(folder_path))
 
 
 def get_sprites_from_animations(animations):
@@ -133,7 +152,7 @@ def detect_sprite(sprites, side, image_to_find_in):
             mask = mask_right
         result = cv.matchTemplate(image_to_find_in, image, method, mask=mask)
         _, max_value, _, max_location = cv.minMaxLoc(result)
-        # print('  ', animation_name, sprite_number, max_value)
+        print('  ', animation_name, sprite_number, max_value)
         if max_value >= 0.7:
             results.append((sprite, max_location))
     return results
@@ -206,6 +225,31 @@ class SpriteDetector:
         return self.last_possible_animations
 
 
+# class ProjectileSpriteDetector:
+#     def __init__(self):
+#         pass
+
+
+class KenHadokenProjectileSpriteDetector:
+    def __init__(self, animation_sprites):
+        self.animation_sprites = animation_sprites
+
+    def detect(self, frame):
+        results = detect_sprite(self.animation_sprites, Side.LEFT, frame) + \
+            detect_sprite(self.animation_sprites, Side.RIGHT, frame)
+        last_possible_animations = []
+        for sprite, location in results:
+            animation_name, sprite_number, _, _, _, _, _ = sprite
+            last_possible_animations.append({
+                'name': animation_name,
+                'frame': 1,
+                'sprite_number': sprite_number,
+                'location': location,
+                'sprite': sprite
+            })
+        return last_possible_animations
+
+
 def is_animation_possible(animations, animation_name):
     for animation in animations:
         if animation['name'] == animation_name:
@@ -243,7 +287,7 @@ class ActionChooser:
 
 
 class ActionChooser1(ActionChooser):
-    def choose_action(self, info, animations):
+    def choose_action(self, info, animations, projectile_results):
         if len(self.buffered_actions) >= 1:
             action = self.buffered_actions.pop(0)
             return action
@@ -350,7 +394,7 @@ class ActionChooser1BestResponse(ActionChooser):
         self.frame = 0
         self.next_frame_to_act = None
 
-    def choose_action(self, info, animations):
+    def choose_action(self, info, animations, projectile_results):
         self.frame += 1
 
         if len(self.buffered_actions) >= 1:
