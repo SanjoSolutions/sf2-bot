@@ -71,7 +71,6 @@ def main():
         frame_duration = frame_end_time - frame_start_time
         frame_sleep_duration = duration_per_frame - frame_duration
         if frame_sleep_duration > 0:
-            print('sleep', frame_sleep_duration)
             time.sleep(frame_sleep_duration)
 
         if done:
