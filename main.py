@@ -238,7 +238,11 @@ class ActionChooser:
         return actions[0]
 
     # ["B", "Y", "SELECT", "START", "UP", "DOWN", "LEFT", "RIGHT", "A", "X", "L", "R"]
-    # def choose_action(possible_animations, player_index_to_choose_for):
+    def choose_action(self, info, animations):
+        pass
+
+
+class ActionChooser1(ActionChooser):
     def choose_action(self, info, animations):
         if len(self.buffered_actions) >= 1:
             action = self.buffered_actions.pop(0)
@@ -338,6 +342,60 @@ class ActionChooser:
 
         # blocking
         return 0, 0, 0, 0, 0, 1, left, right, 0, 0, 0, 0
+
+
+class ActionChooser1BestResponse(ActionChooser):
+    def __init__(self, player_index_to_choose_for):
+        super().__init__(player_index_to_choose_for)
+        self.frame = 0
+        self.next_frame_to_act = None
+
+    def choose_action(self, info, animations):
+        self.frame += 1
+
+        if len(self.buffered_actions) >= 1:
+            action = self.buffered_actions.pop(0)
+            return action
+
+        if self.next_frame_to_act is not None:
+            if self.frame >= self.next_frame_to_act:
+                self.next_frame_to_act = None
+            else:
+                return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+        if info is None:
+            return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+        players = (
+            {
+                'x': info['x_p1']
+            },
+            {
+                'x': info['x_p2']
+            }
+        )
+
+        left = 0
+        right = 0
+
+        if (
+            self.player_index_to_choose_for == 0 and players[0]['x'] <= players[1]['x'] or
+            self.player_index_to_choose_for == 1 and players[1]['x'] <= players[0]['x']
+        ):
+            left = 1
+
+        if (
+            self.player_index_to_choose_for == 0 and players[0]['x'] > players[1]['x'] or
+            self.player_index_to_choose_for == 1 and players[1]['x'] > players[0]['x']
+        ):
+            right = 1
+
+        self.next_frame_to_act = self.frame + 4 + 52 + 15
+        return self._buffered_action((
+            (0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 1, (left + 1) % 2, (right + 1) % 2, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0, 0, (left + 1) % 2, (right + 1) % 2, 0, 0, 1, 0),
+        ))
 
 
 if __name__ == "__main__":

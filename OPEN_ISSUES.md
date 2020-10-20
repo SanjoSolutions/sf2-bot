@@ -48,3 +48,4 @@
     [None, []]
     ```
 * [ ] Fiery Shoryuken animation not detected
+* [ ] Dodging hadoken (to be able to beat a strategy that only uses hadoken)

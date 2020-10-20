@@ -3,8 +3,8 @@ import cv2 as cv
 import numpy as np
 import time
 
-from main import get_animations_of_character, SpriteDetector, Side, ActionChooser
-
+from main import get_animations_of_character, SpriteDetector, Side, ActionChooser1, \
+    ActionChooser1BestResponse
 
 BUTTON_COUNT = 12
 
@@ -19,8 +19,8 @@ def main():
         SpriteDetector(animations[1]),
     )
     action_choosers = (
-        ActionChooser(0),
-        None
+        ActionChooser1(0),
+        ActionChooser1BestResponse(1)
     )
 
     retro.data.Integrations.add_custom_path('/Applications')
@@ -56,14 +56,9 @@ def main():
             results = None
         # action_space will by MultiBinary(16) now instead of MultiBinary(8)
         # the bottom half of the actions will be for player 1 and the top half for player 2
-        # chosen_actions = np.concatenate((
-        #     choose_action(0, info, results),
-        #     choose_action(1, info, results)
-        # ))
-        random_actions = env.action_space.sample()
         actions = np.concatenate((
             action_choosers[0].choose_action(info, results),
-            random_actions[(BUTTON_COUNT + 1):(BUTTON_COUNT + 1 + BUTTON_COUNT)]
+            action_choosers[1].choose_action(info, results),
         ))
         obs, rew, done, info = env.step(actions)
         # rew will be a list of [player_1_rew, player_2_rew]
