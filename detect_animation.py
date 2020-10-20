@@ -3,7 +3,7 @@ from main import get_animations_of_character, SpriteDetector, Side, get_ordered_
 animations = get_animations_of_character('ken')
 sprite_detector = SpriteDetector(animations)
 
-images = get_ordered_numbered_images_in_folder('screenshots/ken_hadoken')
+images = get_ordered_numbered_images_in_folder('screenshots/ken_shoryuken')
 
 for index in range(len(images)):
     image = images[index]

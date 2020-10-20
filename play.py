@@ -3,7 +3,7 @@ import cv2 as cv
 import numpy as np
 import time
 
-from main import get_animations_of_character, SpriteDetector, Side, choose_action
+from main import get_animations_of_character, SpriteDetector, Side, ActionChooser
 
 
 BUTTON_COUNT = 12
@@ -18,6 +18,10 @@ def main():
         None, # SpriteDetector(animations[0]),
         SpriteDetector(animations[1]),
     )
+    action_choosers = (
+        ActionChooser(0),
+        None
+    )
 
     retro.data.Integrations.add_custom_path('/Applications')
     env = retro.make(
@@ -29,7 +33,7 @@ def main():
     info = None
     obs = env.reset()
     FPS = 30
-    duration_per_frame = 1 / 30  # in seconds
+    duration_per_frame = 1 / FPS  # in seconds
     while True:
         frame_start_time = time.time()
         if info is not None:
@@ -58,7 +62,7 @@ def main():
         # ))
         random_actions = env.action_space.sample()
         actions = np.concatenate((
-            choose_action(0, info, results),
+            action_choosers[0].choose_action(info, results),
             random_actions[(BUTTON_COUNT + 1):(BUTTON_COUNT + 1 + BUTTON_COUNT)]
         ))
         obs, rew, done, info = env.step(actions)

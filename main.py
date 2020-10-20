@@ -213,6 +213,14 @@ def is_animation_possible(animations, animation_name):
     return False
 
 
+def is_any_of_animations_possible(animations, animation_names):
+    return any(
+        is_animation_possible(animations, animation_name)
+        for animation_name
+        in animation_names
+    )
+
+
 def is_animation_possible_at_sprite_number_or_above(animations, animation_name, minimum_sprite_number):
     for animation in animations:
         if animation['name'] == animation_name and animation['sprite_number'] >= minimum_sprite_number:
@@ -220,80 +228,116 @@ def is_animation_possible_at_sprite_number_or_above(animations, animation_name, 
     return False
 
 
-# ["B", "Y", "SELECT", "START", "UP", "DOWN", "LEFT", "RIGHT", "A", "X", "L", "R"]
-# def choose_action(possible_animations, player_index_to_choose_for):
-def choose_action(player_index_to_choose_for, info, animations):
-    other_player_index = (player_index_to_choose_for + 1) % 2
+class ActionChooser:
+    def __init__(self, player_index_to_choose_for):
+        self.player_index_to_choose_for = player_index_to_choose_for
+        self.buffered_actions = []
 
-    if info is None:
-        return (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    def _buffered_action(self, actions):
+        self.buffered_actions.extend(actions[1:])
+        return actions[0]
 
-    players = (
-        {
-            'x': info['x_p1']
-        },
-        {
-            'x': info['x_p2']
-        }
-    )
-    distance = abs(players[0]['x'] - players[1]['x'])
-    # player = players[player_index_to_choose_for]
-    # opponent_index = (player_index_to_choose_for + 1) % 2
-    # opponent = players[opponent_index]
+    # ["B", "Y", "SELECT", "START", "UP", "DOWN", "LEFT", "RIGHT", "A", "X", "L", "R"]
+    # def choose_action(possible_animations, player_index_to_choose_for):
+    def choose_action(self, info, animations):
+        if len(self.buffered_actions) >= 1:
+            action = self.buffered_actions.pop(0)
+            return action
 
-    left = 0
-    right = 0
+        other_player_index = (self.player_index_to_choose_for + 1) % 2
 
-    if (
-        player_index_to_choose_for == 0 and players[0]['x'] <= players[1]['x'] or
-        player_index_to_choose_for == 1 and players[1]['x'] <= players[0]['x']
-    ):
-        left = 1
+        if info is None:
+            return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-    if (
-        player_index_to_choose_for == 0 and players[0]['x'] > players[1]['x'] or
-        player_index_to_choose_for == 1 and players[1]['x'] > players[0]['x']
-    ):
-        right = 1
-
-    if (
-        distance <= 47 and
-        (
-            is_animation_possible(animations[other_player_index], 'idle') or
-            is_animation_possible(animations[other_player_index], 'walking') or
-            is_animation_possible(animations[other_player_index], 'jump') or
-            is_animation_possible(animations[other_player_index], 'forward_jump') or
-            is_animation_possible(animations[other_player_index], 'crouch') or
-            is_animation_possible(animations[other_player_index], 'standing_block') or
-            is_animation_possible(animations[other_player_index], 'stunned')
+        players = (
+            {
+                'x': info['x_p1']
+            },
+            {
+                'x': info['x_p2']
+            }
         )
-    ):
-        # throw
-        return (0, 0, 0, 0, 0, 0, (left + 1) % 2, (right + 1) % 2, 0, 1, 0, 0)
+        distance = abs(players[0]['x'] - players[1]['x'])
+        # player = players[player_index_to_choose_for]
+        # opponent_index = (player_index_to_choose_for + 1) % 2
+        # opponent = players[opponent_index]
 
-    if (
-        distance <= 67 and
-        is_animation_possible_at_sprite_number_or_above(animations[other_player_index], 'crouching_hard_kick', 2)
-    ):
-        # crouching hard kick
-        return (0, 0, 0, 0, 0, 1, left, right, 0, 0, 0, 1)
+        left = 0
+        right = 0
 
-    if (
-        is_animation_possible(animations[other_player_index], 'jump') or
-        is_animation_possible(animations[other_player_index], 'jumping_hard_kick') or
-        is_animation_possible(animations[other_player_index], 'jumping_light_medium_hard_punch') or
-        is_animation_possible(animations[other_player_index], 'jumping_light_medium_kick') or
-        is_animation_possible(animations[other_player_index], 'forward_jump') or
-        is_animation_possible(animations[other_player_index], 'forward_jumping_light_punch') or
-        is_animation_possible(animations[other_player_index], 'forward_jumping_medium_hard_kick') or
-        is_animation_possible(animations[other_player_index], 'forward_hard_kick')
-    ):
-        down = 0
-    else:
-        down = 1
+        if (
+            self.player_index_to_choose_for == 0 and players[0]['x'] <= players[1]['x'] or
+            self.player_index_to_choose_for == 1 and players[1]['x'] <= players[0]['x']
+        ):
+            left = 1
 
-    # blocking
-    return (0, 0, 0, 0, 0, down, left, right, 0, 0, 0, 0)
+        if (
+            self.player_index_to_choose_for == 0 and players[0]['x'] > players[1]['x'] or
+            self.player_index_to_choose_for == 1 and players[1]['x'] > players[0]['x']
+        ):
+            right = 1
+
+        # FIXME: Only when character to choose for is in blocking stance
+        # if distance >= 126:
+        #     # hadoken
+        #     return self._buffered_action((
+        #         (0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0),
+        #         (0, 0, 0, 0, 0, 1, (left + 1) % 2, (right + 1) % 2, 0, 0, 0, 0),
+        #         (0, 0, 0, 0, 0, 0, (left + 1) % 2, (right + 1) % 2, 0, 0, 0, 0),
+        #         (0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        #     ))
+
+        if (
+            distance <= 47 and
+            is_any_of_animations_possible(
+                animations[other_player_index],
+                (
+                    'idle',
+                    'walking',
+                    'jump',
+                    'forward_jump',
+                    'crouch',
+                    'standing_block',
+                    'stunned'
+                )
+            )
+        ):
+            # throw
+            return 0, 0, 0, 0, 0, 0, (left + 1) % 2, (right + 1) % 2, 0, 1, 0, 0
+
+        if (
+            distance <= 67 and
+            is_animation_possible_at_sprite_number_or_above(animations[other_player_index], 'crouching_hard_kick', 2)
+        ):
+            # crouching hard kick
+            return 0, 0, 0, 0, 0, 1, left, right, 0, 0, 0, 1
+
+        if (
+            is_any_of_animations_possible(
+                animations[other_player_index],
+                (
+                    'jump',
+                    'jumping_hard_kick',
+                    'jumping_light_medium_hard_punch',
+                    'jumping_light_medium_kick',
+                    'forward_jump',
+                    'forward_jumping_light_punch',
+                    'forward_jumping_medium_hard_kick',
+                    'forward_hard_kick'
+                )
+            )
+        ):
+            if distance <= 47:
+                # shoryuken
+                return self._buffered_action((
+                    (0, 0, 0, 0, 0, 0, (left + 1) % 2, (right + 1) % 2, 0, 0, 0, 0),
+                    (0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0),
+                    (0, 0, 0, 0, 0, 1, (left + 1) % 2, (right + 1) % 2, 0, 0, 0, 0),
+                    (0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                ))
+
+        # blocking
+        return 0, 0, 0, 0, 0, 1, left, right, 0, 0, 0, 0
 
 
 if __name__ == "__main__":
