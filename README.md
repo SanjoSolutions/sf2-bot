@@ -4,6 +4,12 @@ This work is devoted to God.
 
 # Setup
 
+## Dependencies
+
+* Python 3.7
+* opencv-python (`pip install opencv-python`)
+* gym-retro (`pip install gym-retro`)
+
 ## Symlinking resources
 
 The resources have not been published
