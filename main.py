@@ -138,7 +138,7 @@ def get_sprites_from_animations(animations):
     return tuple(itertools.chain.from_iterable(animations.values()))
 
 
-def detect_sprite(sprites, side, image_to_find_in):
+def detect_sprite(sprites, side, image_to_find_in, threshold=0.7):
     method = cv.TM_CCOEFF_NORMED
     results = []
     for sprite in sprites:
@@ -153,7 +153,7 @@ def detect_sprite(sprites, side, image_to_find_in):
         result = cv.matchTemplate(image_to_find_in, image, method, mask=mask)
         _, max_value, _, max_location = cv.minMaxLoc(result)
         print('  ', animation_name, sprite_number, max_value)
-        if max_value >= 0.7:
+        if max_value >= threshold:
             results.append((sprite, max_location))
     return results
 
@@ -235,8 +235,11 @@ class KenHadokenProjectileSpriteDetector:
         self.animation_sprites = animation_sprites
 
     def detect(self, frame):
-        results = detect_sprite(self.animation_sprites, Side.LEFT, frame) + \
-            detect_sprite(self.animation_sprites, Side.RIGHT, frame)
+        y_offset = 130
+        frame = frame[y_offset:, :]
+        threshold = 0.9
+        results = detect_sprite(self.animation_sprites, Side.LEFT, frame, threshold=threshold) + \
+            detect_sprite(self.animation_sprites, Side.RIGHT, frame, threshold=threshold)
         last_possible_animations = []
         for sprite, location in results:
             animation_name, sprite_number, _, _, _, _, _ = sprite
@@ -244,7 +247,7 @@ class KenHadokenProjectileSpriteDetector:
                 'name': animation_name,
                 'frame': 1,
                 'sprite_number': sprite_number,
-                'location': location,
+                'location': (location[0], y_offset + location[1]),
                 'sprite': sprite
             })
         return last_possible_animations
