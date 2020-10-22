@@ -152,7 +152,7 @@ def detect_sprite(sprites, side, image_to_find_in, threshold=0.7):
             mask = mask_right
         result = cv.matchTemplate(image_to_find_in, image, method, mask=mask)
         _, max_value, _, max_location = cv.minMaxLoc(result)
-        print('  ', animation_name, sprite_number, max_value)
+        # print('  ', animation_name, sprite_number, max_value)
         if max_value >= threshold:
             results.append((sprite, max_location))
     return results
