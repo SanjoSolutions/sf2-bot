@@ -9,6 +9,7 @@ This work is devoted to God.
 * Python 3.7
 * opencv-python (`pip install opencv-python`)
 * gym-retro (`pip install gym-retro`)
+* [baselines](https://github.com/openai/baselines) ([installation](https://github.com/openai/baselines#installation))
 
 ## Symlinking resources
 

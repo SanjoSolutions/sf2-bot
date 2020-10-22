@@ -5,7 +5,10 @@ from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
 from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
 
 from animation_embedding import create_animation_embedding
-from experiments.ppo2.ppo2 import ppo2
+from baselines.ppo2 import ppo2
+
+from experiments.ppo2.MonitorWrapper import MonitorWrapper
+from experiments.ppo2.RoundResultOutputWrapper import RoundResultOutputWrapper
 from experiments.ppo2.RyuDiscretizer import RyuDiscretizer, RyuDiscretizerDefending
 
 from experiments.ppo2.SuperStreetFigher2ObservationSpaceWrapper import SuperStreetFighter2ObservationSpaceWrapper
@@ -22,20 +25,21 @@ CHECKPOINTS_PATH = os.path.join(LOG_PATH, 'checkpoints')
 MODEL_PATH = os.path.join(CHECKPOINTS_PATH, 'latest')
 
 
-def make_sf2_env(animation_embeddings, sprite_embeddings):
+def create_sf2_env():
     retro.data.Integrations.add_custom_path(
-        '/Applications'
+        '/home/jonas/Documents'
     )
     env = retro.make(
         game='SuperStreetFighter2-Snes',
-        state='ryu_vs_ken_both_controlled',
+        state='ryu_vs_fei_long_highest_difficulty',
         scenario=None,
         inttype=retro.data.Integrations.CUSTOM_ONLY,
-        obs_type=retro.Observations.IMAGE,
+        obs_type=None,
         players=1,
         use_restricted_actions=retro.Actions.FILTERED,
     )
-    env = SuperStreetFighter2ObservationSpaceWrapper(env, animation_embeddings, sprite_embeddings)
+    env = SuperStreetFighter2ObservationSpaceWrapper(env)
+    env = RoundResultOutputWrapper(env)
     env = RyuDiscretizer(env)
     return env
 
@@ -44,32 +48,14 @@ def main():
     os.environ['OPENAI_LOGDIR'] = LOG_PATH
 
     number_of_environments = 1
-    animations = (
-        get_animations_of_character('ryu'),
-        get_animations_of_character('ken')
-    )
-    animation_embeddings = tuple(
-        create_animation_embedding(animations)
-        for animations
-        in animations
-    )
-    sprite_embeddings = tuple(
-        create_sprite_embedding(animations)
-        for animations
-        in animations
-    )
-    create_sf2_env = lambda: make_sf2_env(animation_embeddings, sprite_embeddings)
     venv = DummyVecEnv([create_sf2_env] * number_of_environments)
-    video_path = './recording'
-    video_length = 10 * FPS
-    venv = VecVideoRecorder(venv, video_path, record_video_trigger=lambda step: step %
-                            video_length == 0, video_length=video_length)
+
     ppo2.learn(
         network='mlp',
         env=venv,
         # eval_env=venv,
         total_timesteps=40000000,
-        nsteps=1,
+        nsteps=5 * FPS,
         nminibatches=number_of_environments,
         lam=0.95,
         gamma=0.99,
