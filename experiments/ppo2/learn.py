@@ -2,18 +2,14 @@ import retro
 import os
 import tensorflow as tf
 from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
-from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
-
-from animation_embedding import create_animation_embedding
-from baselines.ppo2 import ppo2
 
 from experiments.ppo2.MonitorWrapper import MonitorWrapper
+from experiments.ppo2.ppo2_sf2 import ppo2
+
 from experiments.ppo2.RoundResultOutputWrapper import RoundResultOutputWrapper
 from experiments.ppo2.RyuDiscretizer import RyuDiscretizer, RyuDiscretizerDefending
 
 from experiments.ppo2.SuperStreetFigher2ObservationSpaceWrapper import SuperStreetFighter2ObservationSpaceWrapper
-from main import get_animations_of_character
-from sprite_embedding import create_sprite_embedding
 
 os.chdir('../..')
 
@@ -39,6 +35,7 @@ def create_sf2_env():
         use_restricted_actions=retro.Actions.FILTERED,
     )
     env = SuperStreetFighter2ObservationSpaceWrapper(env)
+    # env = MonitorWrapper(env)
     env = RoundResultOutputWrapper(env)
     env = RyuDiscretizer(env)
     return env
@@ -55,7 +52,6 @@ def main():
         env=venv,
         # eval_env=venv,
         total_timesteps=40000000,
-        nsteps=5 * FPS,
         nminibatches=number_of_environments,
         lam=0.95,
         gamma=0.99,
@@ -69,9 +65,9 @@ def main():
         # load_path=MODEL_PATH,
         # neuronal network parameters
         activation=tf.nn.relu,
-        num_layers=2,  # 4, 2
-        num_hidden=48,  # 64, 64
-        layer_norm=False
+        num_layers=4,  # 4, 2
+        num_hidden=128,  # 64, 64
+        layer_norm=True
     )
 
 

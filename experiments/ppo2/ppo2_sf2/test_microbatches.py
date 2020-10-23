@@ -5,9 +5,9 @@ from functools import partial
 
 from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
 from baselines.common.tf_util import make_session
-from ppo2.ppo2 import learn
+from .ppo2 import learn
 
-from ppo2.microbatched_model import MicrobatchedModel
+from .microbatched_model import MicrobatchedModel
 
 def test_microbatches():
     def env_fn():

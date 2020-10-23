@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from ppo2.model import Model
+from .model import Model
 
 class MicrobatchedModel(Model):
     """
