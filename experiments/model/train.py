@@ -18,13 +18,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(SCRIPT_DIR, 'model')
 
 
-def create_sf2_env(print_round_results=False):
+def create_sf2_env(state='ryu_vs_fei_long_highest_difficulty', print_round_results=False):
     retro.data.Integrations.add_custom_path(
         '/home/jonas/Documents'
     )
     env = retro.make(
         game='SuperStreetFighter2-Snes',
-        state='ryu_vs_fei_long_highest_difficulty',
+        state=state,
         scenario=None,
         inttype=retro.data.Integrations.CUSTOM_ONLY,
         obs_type=None,
