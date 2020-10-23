@@ -24,10 +24,19 @@ class Discretizer(gym.ActionWrapper):
         self.action_space = gym.spaces.Discrete(
             len(self._decode_discrete_action))
 
-    def action(self, act):
-        if isinstance(act, tuple) or isinstance(act, list):
+    def action(self, action):
+        if isinstance(action, tuple) or isinstance(action, list):
             number_of_actions = int(self.env.action_space.n / self.env.players)
             return np.concatenate(
-                tuple(self._decode_discrete_action[act[index]][0:number_of_actions] for index in range(len(act))), axis=None)
+                tuple(
+                    self.map_discrete_action_to_multi_binary_action(action[index])[0:number_of_actions]
+                    for index
+                    in range(len(action))
+                ),
+                axis=None
+            )
         else:
-            return self._decode_discrete_action[act].copy()
+            return self.map_discrete_action_to_multi_binary_action(action)
+
+    def map_discrete_action_to_multi_binary_action(self, action):
+        return self._decode_discrete_action[action].copy()

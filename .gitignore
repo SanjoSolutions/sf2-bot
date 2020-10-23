@@ -5,4 +5,5 @@ __pycache__
 .DS_Store
 /recording
 /experiments/ppo2/model
-/experiments/ppo2/model_*
+model_*
+/experiments/model/model

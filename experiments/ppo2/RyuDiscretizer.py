@@ -1,4 +1,4 @@
-from Discretizer import Discretizer
+from .Discretizer import Discretizer
 
 
 class RyuDiscretizer(Discretizer):
